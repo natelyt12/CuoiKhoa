@@ -21,15 +21,23 @@ st.write(df.head(10))
 # start ---------------------------------------------------------------------
 # Giới thiệu
 st.sidebar.title('Giới thiệu')
-st.sidebar.write('Ứng dụng này giúp bạn tra cứu điểm thi THPT Quốc Gia 2024.')
+st.sidebar.write('Ứng dụng này giúp bạn tra cứu điểm thi THPT Quốc Gia 2024.\nỨng dụng được viết nhằm mục đích chuẩn bị cuối khóa CSA của MindX.\n\nThành viên nhóm:\n- Nguyễn Như Hải Đăng\n- Lã Phúc Thanh\n- Lê Trung Kiên')
 
 # Số lượng học sinh
-st.markdown(f'## Số lượng học sinh thi THPTQG 2024: **_{df.shape[0]}_**')
+st.markdown(f'### Số lượng học sinh thi THPTQG 2024: **_{df.shape[0]}_**')
 # Số lượng môn thi
-st.write(f'### Số lượng môn thi: **_{df.shape[1] - 1}_**')  # -1 because 'SBD' is not a subject
+st.write(f'Số lượng môn thi: **_{df.shape[1] - 1}_**')  # -1 because 'SBD' is not a subject
 # Số lượng học sinh có điểm thi
-st.write(f'### Số lượng học sinh có điểm thi: **_{df[df["Toán"] > 0].shape[0]}_**')
+st.write(f'Số lượng học sinh có điểm thi: **_{df[df["Toán"] > 0].shape[0]}_**')
 # Số lượng học sinh không có điểm thi
-st.write(f'### Số lượng học sinh không có điểm thi: **_{df[df["Toán"] == 0].shape[0]}_**')
+st.write(f'Số lượng học sinh không có điểm thi: **_{df[df["Toán"] == 0].shape[0]}_**')
 
+sbd_input = st.text_input("Nhập SBD cần tìm (ví dụ: 1000010):")
 
+if sbd_input:
+    result = df[df["SBD"].astype(str) == sbd_input.strip()]
+    if not result.empty:
+        st.success(f"Tìm thấy {len(result)} kết quả:")
+        st.dataframe(result, use_container_width=True)
+    else:
+        st.warning("Không tìm thấy thí sinh với SBD này.")
