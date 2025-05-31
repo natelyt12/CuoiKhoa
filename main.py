@@ -14,7 +14,7 @@ st.set_page_config(
     page_icon="logo.png",  
 )
 
-st.title("Dùng icon từ file")
+st.title("TEAM NET PY")
 
 # Load & xử lý dữ liệu -----------------------------------------------------------------------
 df = load_data()
