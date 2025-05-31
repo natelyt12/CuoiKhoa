@@ -1,11 +1,12 @@
 1) Câu chuyện dữ liệu: Trung Kiên
-2) Pandas & Streamlit: Như Đăng - Thanh
+2) Pandas & Streamlit: Như Đăng - Thanh - Trung Kiên
+3) Review code: Thanh
 
 - Câu hỏi trong câu chuyện dữ liệu:
 
 + Cơ bản: 
 Mỗi môn có bao nhiêu thí sinh thi? DONE
-Trung bình điểm mỗi môn là bao nhiêu?
+Trung bình điểm mỗi môn là bao nhiêu? DONE
 Có bao nhiêu bạn đạt điểm tuyệt đối (10.0)?
 Có bao nhiêu bạn bị điểm liệt (dưới 1.0)?
 Phổ điểm mỗi môn có phân bố đều không?

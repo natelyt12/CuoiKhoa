@@ -1,127 +1,74 @@
-# Import
-import pandas as pd
 import streamlit as st
+from module.data_handler import load_data
+from module.statistics import get_summary_stats, calculate_average_scores
+from module.ui_components import show_sidebar_info, show_css_style, show_cards
+import plotly.express as px
 
-# Đọc file
-def load_data():
-    return pd.read_csv('diem_thi_thpt_2024.csv')
-
+# Load & xử lý dữ liệu
 df = load_data()
+df_noMNN = df.drop(columns=['Mã ngoại ngữ'])
+df_clean = df_noMNN.drop(columns=['SBD'])
 
-# Clean data
-# Thay NaN bằng 0 và đổi tên cột
-df.fillna(0, inplace = True)
-df.rename(columns = {'sbd': 'SBD', 'toan': 'Toán', 'ngu_van': 'Ngữ văn', 'ngoai_ngu': 'Ngoại ngữ', 'vat_li': 'Vật Lí', 'hoa_hoc': 'Hóa học', 'sinh_hoc': 'Sinh học', 'lich_su': 'Lịch sử', 'dia_li': 'Địa lí', 'gdcd': 'GDCD', 'ma_ngoai_ngu': 'Mã ngoại ngữ'}, inplace = True)
-df_no_MaNgoaiNgu = df.drop(columns=['Mã ngoại ngữ'])
-
-# Tổng quan -----------------------------------------------------------------
-# Giới thiệu
-st.sidebar.title('Giới thiệu')
-st.sidebar.write('Ứng dụng này giúp bạn tra cứu điểm thi THPT Quốc Gia 2024.\nỨng dụng được viết nhằm mục đích chuẩn bị cuối khóa CSA của MindX.\n\nThành viên nhóm:\n- Nguyễn Như Hải Đăng\n- Lã Phúc Thanh\n- Lê Trung Kiên')
-
+# Sidebar + title
+show_sidebar_info()
 st.title('THPT Quốc Gia 2024')
-st.write('Tổng quan dữ liệu:')
-st.write(df.head(10))
 
-# start ---------------------------------------------------------------------
-with st.expander("Tìm số báo danh", expanded=False):
-    sbd_input = st.text_input("Nhập SBD cần tìm (ví dụ: 1000010):")
-    if sbd_input:
-        result = df[df["SBD"].astype(str) == sbd_input.strip()]
-        if not result.empty:
-            st.success(f"Tìm thấy {len(result)} kết quả:")
-            st.dataframe(result, use_container_width=True)
-        else:
-            st.warning("Không tìm thấy thí sinh với SBD này.")
+table_of_contents = st.tabs(["Tổng quan", "Điểm trung bình" , "Thống kê"])
+with table_of_contents[0]:
+    st.write('Tổng quan dữ liệu:')
+    st.write(df.head(10))
 
-# 2. Biến số liệu
-so_thi_sinh = df.shape[0]
-so_mon_thi = df_no_MaNgoaiNgu.shape[1] - 1 
-co_diem = df[df["Toán"] > 0].shape[0]
-khong_diem = df[df["Toán"] == 0].shape[0]  
+    # Tìm SBD
+    with st.expander("Tìm số báo danh", expanded=False):
+        sbd_input = st.text_input("Nhập SBD cần tìm (ví dụ: 1000010):")
+        if sbd_input:
+            result = df[df["SBD"].astype(str) == sbd_input.strip()]
+            if not result.empty:
+                st.success(f"Tìm thấy {len(result)} kết quả:")
+                st.dataframe(result, use_container_width=True)
+            else:
+                st.warning("Không tìm thấy thí sinh với SBD này.")
 
-# define class for styling
-st.markdown("""
-<style>
-    .main-box {
-        text-align: center;
+    # Tính thống kê
+    so_thi_sinh, so_mon_thi, co_diem, khong_diem = get_summary_stats(df)
+    show_css_style()
+    show_cards(so_thi_sinh, so_mon_thi, co_diem, khong_diem)
+
+with table_of_contents[2]:
+    st.subheader("Phân tích theo tổ hợp môn")
+    tohop_dict = {
+        "A00": ["Toán", "Vật Lí", "Hóa học"],
+        "A01": ["Toán", "Vật Lí", "Ngoại ngữ"],
+        "B00": ["Toán", "Sinh học", "Hóa học"],
+        "C00": ["Ngữ văn", "Lịch sử", "Địa lí"],
+        "D01": ["Ngữ văn", "Toán", "Ngoại ngữ"],
+        "D02": ["Ngữ văn", "Toán", "Lịch sử"],
+        "D03": ["Ngữ văn", "Toán", "Sinh học"],
+        "D04": ["Ngữ văn", "Toán", "Địa lí"],
+        "D05": ["Ngữ văn", "Toán", "GDCD"]
     }
-    .main-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: #ffffff;
-    }
-    .big-number {
-        display: inline-block;
-        font-size: 4em;
-        padding: 0px;
-    }
-    .small-label {
-        font-size: 1rem;
-        color: #cccccc;
-        margin-bottom: 20px;
-    }
-    .card {
-        text-align: center;
-        color: #ffffff;
-    }
-    .card-title {
-        font-size: 16px;
-        color: #aaaaaa;
-    }
-    .card-value {
-        font-size: 22px;
-        font-weight: bold;
-        color: #ffffff;
-    }
-</style>
-""", unsafe_allow_html=True)
+    
+    chon = st.selectbox("Chọn tổ hợp môn:", list(tohop_dict.keys()))
+    if chon:
+        subjects = tohop_dict[chon]
+        filtered_df = df.copy()
+        for subj in subjects:
+            filtered_df = filtered_df[filtered_df[subj] > 0]
+        st.success(f"Tìm thấy {len(filtered_df)} học sinh có đủ điểm tổ hợp {chon}")
+        st.dataframe(filtered_df[["SBD"] + subjects], use_container_width=True)
 
-# create card layout
-st.markdown(f"""
-<div class='main-box'>
-    <div class='main-title'>Số lượng thí sinh thi THPTQG 2024</div>
-    <div class='big-number'>{so_thi_sinh:,}</div>
-    <div class='small-label'>thí sinh</div>
-</div>
-""", unsafe_allow_html=True)
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown(f"""
-    <div class='card'>
-        <div class='card-title'>Số môn thi</div>
-        <div class='card-value'>{so_mon_thi:,}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col2:
-    st.markdown(f"""
-    <div class='card'>
-        <div class='card-title'>Thí sinh có điểm</div>
-        <div class='card-value'>{co_diem:,}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col3:
-    st.markdown(f"""
-    <div class='card'>
-        <div class='card-title'>Không có điểm</div>
-        <div class='card-value' style='color: #FF6961;'>{khong_diem:,}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Trung bình -----------------------------------------------------------------
-st.subheader('Trung bình điểm thi các môn')
-
-# Tính trung bình điểm thi các môn
-def calculate_average_scores(df):
-    df = df.drop(columns=['SBD'])
-    average_scores = df.mean().round(2)
-    return average_scores
-average_scores = calculate_average_scores(df_no_MaNgoaiNgu)
-# Hiển thị trung bình điểm thi các môn
-st.dataframe(average_scores, use_container_width=True)
-
-st.bar_chart(average_scores, use_container_width=True, height=500)
+with table_of_contents[1]:
+    # Trung bình
+    st.subheader('Trung bình điểm thi các môn')
+    average_scores = calculate_average_scores(df_clean)
+    st.dataframe(average_scores, use_container_width=True)
+    
+    fig = px.bar(
+        average_scores,
+        x=average_scores.index,
+        y=average_scores.values,
+        labels={'x': 'Môn thi', 'y': 'Điểm trung bình'},
+        title='Biểu đồ điểm trung bình các môn thi',
+        color_discrete_sequence=['#636EFA']
+    )
+    st.plotly_chart(fig, use_container_width=True)
