@@ -28,7 +28,7 @@ st.sidebar.write(
 st.title('THPT Quốc Gia 2024')
 
 # Phần chính -----------------------------------------------------------------------------------------------
-table_of_contents = st.tabs(["Tổng quan", "Điểm trung bình", "Phổ điểm của từng môn học", "Thống kê"])
+table_of_contents = st.tabs(["Tổng quan", "Điểm trung bình", "Thông tin chi tiết của từng môn học", "Tổ hợp"])
 with table_of_contents[0]: # Tổng quan
     st.write('Tổng quan dữ liệu:')
     st.write(df.head(10))
@@ -94,7 +94,7 @@ with table_of_contents[1]: # Điểm trung binh
                 if result['Hóa học'].sum() == 0:
                     st.write('Thí sinh này thi khoa học xã hội')
                 else:
-                    st.write('Thí sinh này thi khoa học tự nhiên')
+                    st.write('Thí sinh này thi KHTN')
             else:
                 st.warning("Không tìm thấy thí sinh với SBD này.")
 
@@ -111,6 +111,11 @@ with table_of_contents[1]: # Điểm trung binh
         title='Biểu đồ điểm trung bình các môn thi',
         color_discrete_sequence=["#FFAEE0"],
         text_auto=True
+    )
+    fig.update_layout(
+        bargap=0.2,
+        xaxis_title="Môn thi",
+        yaxis_title="Điểm trung bình",
     )
 
     # Thêm biểu đồ đường
@@ -135,47 +140,107 @@ with table_of_contents[1]: # Điểm trung binh
     
 
     st.subheader("Điểm trung bình của các môn tự nhiên và các môn xã hội")
-    # Điểm trung bình của 4 môn tự nhiên
+    st.markdown(f'*Số lượng học sinh tham gia thi KHTN và KHXH:*')
+    fig = go.Figure(
+        go.Pie(
+            labels=["KHTN", "KHXH"],
+            values=[so_luong_khtn, so_luong_khxh],
+            textinfo="label+percent",
+            textposition="inside",
+            marker=dict(colors=["#FFAEE0", "#FF8A86"]),
+        )    
+    )
+    fig.update_layout(
+        showlegend=False,
+        margin=dict(l=0, r=0, t=0, b=0)
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Điểm trung bình của các môn KHTN
     tb_tu_nhiien = (average_scores['Toán'] + average_scores['Vật Lí'] + average_scores['Hóa học'] + average_scores['Sinh học']) / 4
-    st.markdown(f'Điểm trung bình 4 môn tự nhiên: *{tb_tu_nhiien:.2f}*')
-    # Điểm trung bình của 4 môn xã hội
+    st.markdown(f'Điểm trung bình các môn KHTN: *{tb_tu_nhiien:.2f}*')
+    # Điểm trung bình của các môn KHXH
     tb_xa_hoi = (average_scores['Ngữ văn'] + average_scores['Lịch sử'] + average_scores['Địa lí'] + average_scores['GDCD']) / 4
-    st.markdown(f'Điểm trung bình 4 môn xã hội: *{tb_xa_hoi:.2f}*')
+    st.markdown(f'Điểm trung bình các môn KHXH: *{tb_xa_hoi:.2f}*')
 
     if tb_xa_hoi > tb_tu_nhiien:
         st.info("Khối xã hội năm 2024 có điểm trung bình cao hơn khối tự nhiên.")
     else:
         st.info("Khối tự nhiên năm 2024 có điểm trung bình nhỉnh hơn khối xã hội.")
 
-    # vẽ biểu đồ so sánh điểm trung bình 4 môn tự nhiên với 4 môn xã hội
-    fig = px.bar(
-        x=['4 môn tự nhiên', '4 môn xã hội'],
-        y=[tb_tu_nhiien, tb_xa_hoi],
-        labels={'x': 'Môn', 'y': 'Điểm trung bình'},
-        title='Biểu đồ so sánh điểm trung bình 4 môn tự nhiên với 4 môn xã hội',
-        color_discrete_sequence=["#AEF3FF"],
-        text_auto=True
-    )
-    st.plotly_chart(fig, use_container_width=True)
-
 with table_of_contents[2]: # Phổ điểm và thông tin khác
     # Phổ điểm từng môn
-    st.header("Thông tin chi tiết của môn học")
-    mon_list = list(df_noMNN.columns)
-    mon_list.remove("SBD")
-    chon_mon = st.selectbox("Chọn môn học để bắt đầu xem thông tin chi tiết:", mon_list)
+    chon_mon = st.selectbox("Chọn môn học để bắt đầu xem thông tin chi tiết:", mon_thi)
 
     if chon_mon:
+        st.info(f"Thông tin chi tiết về môn {chon_mon}:")
+        # Biểu đồ tròn biểu diễn phần trăm thí sinh tham gia thi môn so với tổng thí sinh
+        fig = go.Figure(data=[go.Pie(
+            labels=[f'Thí sinh tham gia thi {chon_mon}', f'Thí sinh không tham gia thi {chon_mon}'],
+            values=[df_clean[chon_mon].notnull().sum(), df_clean[chon_mon].isnull().sum()],
+            textinfo='percent+label',
+            textposition='inside',
+            insidetextorientation='radial',
+            marker=dict(colors=['#AEF3FF', '#FFAEAE']),
+        )])
+        fig.update_layout(
+            showlegend=False,
+            margin=dict(l=0, r=0, t=0, b=0),
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+
+        # Card to đầu tiên
+        st.markdown(f"""
+        <div style='background-color: transparent; padding: 30px; text-align: center; margin-bottom: 30px;'>
+            <div style='font-size: 20px; color: white;'>Số bài thi môn {chon_mon}</div>
+            <div style='font-size: 60px; color: white;'>{df_clean[chon_mon].notnull().sum()}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        cards = {
+            "Điểm trung bình": average_scores[chon_mon],
+            "Số bài thi đạt 10 tuyệt đối": (df[chon_mon] == 10.0).sum(),
+            "Số bài thi được 8 điểm trở lên": (df[chon_mon] >= 8.0).sum(),
+            "Số bài thi bị điểm liệt": (df[chon_mon] <= 1.0).sum(),
+            "Số bài thi 0 điểm": (df[chon_mon] == 0.0).sum(),
+            "Trung vị": df[chon_mon].median(),
+        }
+
+        def chunk_dict(d, n):
+            it = iter(d.items())
+            for _ in range(0, len(d), n):
+                yield dict(islice(it, n))
+
+        # Hiển thị theo dạng lưới
+        for row in chunk_dict(cards, 3):  # 3 card mỗi dòng
+            cols = st.columns(3)
+            for col, (title, value) in zip(cols, row.items()):
+                with col:
+                    st.markdown(f"""
+                    <div style='background-color: transparent; padding: 20px; border-radius: 12px;
+                            margin-bottom: 20px; text-align: center;'>
+                        <div style='font-size: 14px; color: white;'>{title}</div>
+                        <div style='font-size: 30px; color: white;'>{value}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
         mon_data = df_clean[df_clean[chon_mon] > 0][chon_mon]
-        st.success(f"Tìm thấy {len(mon_data)} học sinh có điểm môn {chon_mon}")
+        st.header(f"Phân bố điểm môn {chon_mon}")
         fig = px.histogram(
             mon_data,
             x=chon_mon,
-            nbins=20,
-            title=f"Phân bố điểm môn {chon_mon}",
-            color_discrete_sequence=["#5BBDFF"]
+            nbins=60,
+            color_discrete_sequence=["#7BCAFF"],
+            text_auto=True
         )
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_layout(
+            bargap=0.05,
+            xaxis_title="Điểm",
+            yaxis_title="Số lượng thí sinh",
+        )
+        st.plotly_chart(fig, use_container_width=True, key=f"fig_{chon_mon}")
 
 with table_of_contents[3]: # Thống kê theo tổ hợp môn
     st.subheader("Phân tích theo tổ hợp môn")
@@ -183,19 +248,61 @@ with table_of_contents[3]: # Thống kê theo tổ hợp môn
         "A00": ["Toán", "Vật Lí", "Hóa học"],
         "A01": ["Toán", "Vật Lí", "Ngoại ngữ"],
         "B00": ["Toán", "Sinh học", "Hóa học"],
-        "C00": ["Ngữ văn", "Lịch sử", "Địa lí"],
-        "D01": ["Ngữ văn", "Toán", "Ngoại ngữ"],
-        "D02": ["Ngữ văn", "Toán", "Lịch sử"],
-        "D03": ["Ngữ văn", "Toán", "Sinh học"],
-        "D04": ["Ngữ văn", "Toán", "Địa lí"],
-        "D05": ["Ngữ văn", "Toán", "GDCD"]
+        "C00": ["Ngữ văn", "Lịch sử", "Địa lí"],
+        "D01": ["Ngữ văn", "Toán", "Ngoại ngữ"],
+        "D02": ["Ngữ văn", "Toán", "Lịch sử"],
+        "D03": ["Ngữ văn", "Toán", "Sinh học"],
+        "D04": ["Ngữ văn", "Toán", "Địa lí"],
+        "D05": ["Ngữ văn", "Toán", "GDCD"]
     }
-    
     chon = st.selectbox("Chọn tổ hợp môn:", list(tohop_dict.keys()))
     if chon:
         subjects = tohop_dict[chon]
         filtered_df = df.copy()
         for subj in subjects:
-            filtered_df = filtered_df[filtered_df[subj] > 0]
-        st.success(f"Tìm thấy {len(filtered_df)} học sinh thi tổ hợp {chon}")
-        st.dataframe(filtered_df[["SBD"] + subjects], use_container_width=True)
+            filtered_df = filtered_df[filtered_df[subj] >= 0]
+        st.success(f"Có tất cả {len(filtered_df)} học sinh chọn thi tổ hợp {chon} ({', '.join(subjects)}) - chiếm {round(len(filtered_df) / df.shape[0] * 100, 2)}% tổng thí sinh")
+        
+        # Tính tổng điểm tổ hợp
+        filtered_df["tong_diem"] = filtered_df[subjects].sum(axis=1)
+
+        # Vẽ biểu đồ phổ điểm
+        st.markdown("### Biểu đồ phổ điểm tổ hợp")
+        st.bar_chart(
+            filtered_df["tong_diem"]
+            .round(1)  # làm tròn 1 chữ số thập phân để gom nhóm
+            .value_counts()
+            .sort_index()
+        )
+
+        st.markdown(f"""
+        <div style='background-color: transparent; padding: 30px; text-align: center; margin-bottom: 30px;'>
+            <div style='font-size: 20px; color: white;'>Điểm trung bình của tổ hợp {chon}</div>
+            <div style='font-size: 60px; color: white;'>{filtered_df["tong_diem"].mean().round(2)}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        cards = {
+            "Điểm tổ hợp cao nhất": filtered_df["tong_diem"].max(),
+            "Điểm nhiều thí sinh đạt nhất": filtered_df["tong_diem"].mode().values[0],
+            "Trung vị": filtered_df["tong_diem"].median()
+        }
+
+        def chunk_dict(d, n):
+            it = iter(d.items())
+            for _ in range(0, len(d), n):
+                yield dict(islice(it, n))
+
+        # Hiển thị theo dạng lưới
+        for row in chunk_dict(cards, 3):  # 3 card mỗi dòng
+            cols = st.columns(3)
+            for col, (title, value) in zip(cols, row.items()):
+                with col:
+                    st.markdown(f"""
+                    <div style='background-color: transparent; padding: 20px; border-radius: 12px;
+                            margin-bottom: 20px; text-align: center;'>
+                        <div style='font-size: 14px; color: white;'>{title}</div>
+                        <div style='font-size: 30px; color: white;'>{value}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
