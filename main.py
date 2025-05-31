@@ -4,6 +4,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 from itertools import islice
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # Mấy cái xàm xí
 from module.data_handler import load_data
@@ -37,7 +39,7 @@ st.sidebar.write(
 st.title('THPT Quốc Gia 2024')
 
 # Phần chính -----------------------------------------------------------------------------------------------
-table_of_contents = st.tabs(["Tổng quan", "Điểm trung bình", "Thông tin chi tiết của từng môn học", "Tổ hợp"])
+table_of_contents = st.tabs(["Tổng quan", "Điểm trung bình", "Thông tin chi tiết của từng môn học", "Tổ hợp môn và tương quan"])
 with table_of_contents[0]: # Tổng quan
     st.write('Tổng quan dữ liệu:')
     st.write(df.head(10))
@@ -93,7 +95,7 @@ with table_of_contents[1]: # Điểm trung binh
     average_scores = df_clean.mean().round(2)
     # Tìm SBD
     with st.expander("🔍 Tìm số báo danh", expanded=False):
-        sbd_input = st.text_input("Nhập SBD cần tìm (ví dụ: 1000010):")
+        sbd_input = st.text_input("Nhập SBD cần tìm (ví dụ: 1010):")
 
         if sbd_input:
             result = df[df["SBD"].astype(str) == sbd_input.strip()]
@@ -241,7 +243,7 @@ with table_of_contents[2]: # Phổ điểm và thông tin khác
             mon_data,
             x=chon_mon,
             nbins=30,
-            color_discrete_sequence=["#7BCAFF"],
+            color_discrete_sequence=["#FFFD85"],
             text_auto=True
         )
         fig.update_layout(
@@ -252,7 +254,7 @@ with table_of_contents[2]: # Phổ điểm và thông tin khác
         st.plotly_chart(fig, use_container_width=True, key=f"fig_{chon_mon}")
 
 with table_of_contents[3]: # Thống kê theo tổ hợp môn
-    st.subheader("Phân tích theo tổ hợp môn")
+    # Định nghĩa các tổ hợp môn
     tohop_dict = {
         "A00": ["Toán", "Vật Lí", "Hóa học"],
         "A01": ["Toán", "Vật Lí", "Ngoại ngữ"],
@@ -264,14 +266,18 @@ with table_of_contents[3]: # Thống kê theo tổ hợp môn
         "D04": ["Ngữ văn", "Toán", "Địa lí"],
         "D05": ["Ngữ văn", "Toán", "GDCD"]
     }
+
+    # Phân tích theo tổ hợp môn
+    st.subheader("Phân tích theo tổ hợp môn")
     chon = st.selectbox("Chọn tổ hợp môn:", list(tohop_dict.keys()))
     if chon:
         subjects = tohop_dict[chon]
         filtered_df = df.copy()
         for subj in subjects:
-            filtered_df = filtered_df[filtered_df[subj] >= 0]
+            filtered_df = filtered_df[filtered_df[subj] >= 0]  # Giữ các dòng có điểm >= 0
+
         st.success(f"Có tất cả {len(filtered_df)} học sinh chọn thi tổ hợp {chon} ({', '.join(subjects)}) - chiếm {round(len(filtered_df) / df.shape[0] * 100, 2)}% tổng thí sinh")
-        
+
         # Tính tổng điểm tổ hợp
         filtered_df["Tổng điểm"] = filtered_df[subjects].sum(axis=1)
 
@@ -314,6 +320,76 @@ with table_of_contents[3]: # Thống kê theo tổ hợp môn
                     """, unsafe_allow_html=True)
 
         st.subheader(f"Top 10 thí sinh có tổng điểm cao nhất theo tổ hợp {chon}, ({', '.join(subjects)})")
-        # Xóa bỏ NaN
         filtered_df = filtered_df.dropna(subset=["Tổng điểm"])
         st.dataframe(filtered_df.sort_values("Tổng điểm", ascending=False).head(10))
+
+        # Phân tích tương quan giữa các môn trong tổ hợp
+        st.subheader(f"Phân tích tương quan giữa các môn trong tổ hợp {chon}")
+        st.write(f"Môn trong tổ hợp: {', '.join(subjects)}")
+
+        # Lấy mẫu ngẫu nhiên để tối ưu (nếu dữ liệu lớn)
+        sample_size = st.slider("Kích thước mẫu cho tương quan (số dòng)", 1000, 50000, 10000)
+        if sample_size < len(filtered_df):
+            df_sample = filtered_df[subjects].sample(n=sample_size, random_state=42)
+        else:
+            df_sample = filtered_df[subjects]
+
+        # Xử lý giá trị thiếu
+        if df_sample.isna().sum().sum() > 0:
+            st.warning(f"Dữ liệu có {df_sample.isna().sum().sum()} giá trị thiếu.")
+            nan_option = st.radio(
+                "Chọn cách xử lý giá trị thiếu:",
+                ["Loại bỏ các dòng có giá trị thiếu", "Điền bằng giá trị trung bình"],
+                index=0  # Mặc định loại bỏ NaN
+            )
+            if nan_option == "Loại bỏ các dòng có giá trị thiếu":
+                df_sample = df_sample.dropna()
+                st.write(f"Số dòng sau khi loại bỏ NaN: {len(df_sample)}")
+            else:
+                st.write("Đang điền giá trị thiếu bằng trung bình...")
+                df_sample = df_sample.fillna(df_sample.mean())
+        else:
+            st.write("Dữ liệu không có giá trị thiếu.")
+
+        # Kiểm tra dữ liệu hợp lệ (điểm từ 0-10)
+        df_sample = df_sample[(df_sample[subjects] >= 0).all(axis=1) & (df_sample[subjects] <= 10).all(axis=1)]
+        st.write(f"Số dòng sau khi lọc điểm hợp lệ (0-10): {len(df_sample)}")
+
+        # Ép kiểu dữ liệu sang số
+        try:
+            for subj in subjects:
+                df_sample[subj] = df_sample[subj].astype(float)
+        except ValueError:
+            st.error("Dữ liệu chứa giá trị không phải số! Vui lòng kiểm tra lại cột điểm.")
+            st.stop()
+
+        # Tính và hiển thị ma trận tương quan
+        if len(df_sample) >= 10:  # Cần ít nhất 10 dòng dữ liệu
+            corr_matrix = df_sample.corr(method='pearson')
+            st.write("**Ma trận tương quan giữa các môn:**")
+            st.dataframe(corr_matrix.round(2))
+
+            # Vẽ heatmap tương quan
+            st.subheader("Biểu đồ heatmap tương quan")
+            plt.figure(figsize=(8, 6))
+            sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1, center=0)
+            plt.title(f"Ma trận tương quan tổ hợp {chon}")
+            st.pyplot(plt)
+
+            # Vẽ scatter plot và đường hồi quy cho từng cặp môn
+            st.subheader("Biểu đồ phân tán và đường hồi quy")
+            for i in range(len(subjects)):
+                for j in range(i + 1, len(subjects)):
+                    mon_1, mon_2 = subjects[i], subjects[j]
+                    corr_value = df_sample[mon_1].corr(df_sample[mon_2])
+                    if not np.isnan(corr_value):
+                        plt.figure(figsize=(8, 6))
+                        sns.regplot(data=df_sample, x=mon_1, y=mon_2, scatter_kws={'alpha':0.5}, line_kws={'color':'red'})
+                        plt.xlabel(mon_1)
+                        plt.ylabel(mon_2)
+                        plt.title(f"Tương quan giữa {mon_1} và {mon_2} (r = {corr_value:.2f})")
+                        st.pyplot(plt)
+                    else:
+                        st.warning(f"Không thể tính tương quan giữa {mon_1} và {mon_2} do không đủ dữ liệu hoặc không có biến thiên.")
+        else:
+            st.error(f"Không đủ dữ liệu để tính tương quan (chỉ có {len(df_sample)} dòng, cần ít nhất 10 dòng).")
