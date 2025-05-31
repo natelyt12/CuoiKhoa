@@ -24,15 +24,30 @@ with table_of_contents[0]:
     st.write(df.head(10))
 
     # Tìm SBD
-    with st.expander("Tìm số báo danh", expanded=False):
+    with st.expander("🔍 Tìm số báo danh", expanded=False):
         sbd_input = st.text_input("Nhập SBD cần tìm (ví dụ: 1000010):")
+
         if sbd_input:
-            result = df[df["SBD"].astype(str) == sbd_input.strip()]
-            if not result.empty:
-                st.success(f"Tìm thấy {len(result)} kết quả:")
-                st.dataframe(result, use_container_width=True)
+            if not sbd_input.isdigit():
+                st.error("❌ SBD chỉ được chứa chữ số.")
             else:
-                st.warning("Không tìm thấy thí sinh với SBD này.")
+                sbd_input = sbd_input.strip()
+                result = df[df["SBD"].astype(str) == sbd_input]
+
+                if not result.empty:
+                    st.success(f"✅ Tìm thấy {len(result)} thí sinh với SBD {sbd_input}:")
+                    st.dataframe(result, use_container_width=True)
+
+                    st.download_button(
+                        label="📥 Tải kết quả thí sinh",
+                        data=result.to_csv(index=False).encode("utf-8"),
+                        file_name=f"thisinh_{sbd_input}.csv",
+                        mime="text/csv"
+                    )
+                else:
+                    st.warning("⚠️ Không tìm thấy thí sinh với SBD này.")
+
+
 
     # Tính thống kê
     so_thi_sinh, so_mon_thi, co_diem, khong_diem = get_summary_stats(df)
@@ -61,6 +76,17 @@ with table_of_contents[2]:
             filtered_df = filtered_df[filtered_df[subj] > 0]
         st.success(f"Tìm thấy {len(filtered_df)} học sinh có đủ điểm tổ hợp {chon}")
         st.dataframe(filtered_df[["SBD"] + subjects], use_container_width=True)
+        # Biểu đồ điểm trung bình tổ hợp
+        avg_combo = filtered_df[subjects].mean()
+        fig = px.bar(
+            x=subjects,
+            y=avg_combo,
+            labels={'x': 'Môn', 'y': 'Điểm trung bình'},
+            title=f'Biểu đồ điểm trung bình tổ hợp {chon}',
+            color_discrete_sequence=['#EF553B']
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
 
 with table_of_contents[1]:
     # Trung bình
