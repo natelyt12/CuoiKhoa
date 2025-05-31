@@ -8,6 +8,14 @@ from itertools import islice
 # Mấy cái xàm xí
 from module.data_handler import load_data
 from PIL import Image
+
+st.set_page_config(
+    page_title="03 CSA TEAM",
+    page_icon="logo.png",  
+)
+
+st.title("Dùng icon từ file")
+
 # Load & xử lý dữ liệu -----------------------------------------------------------------------
 df = load_data()
 df_noMNN = df.drop(columns=['Mã ngoại ngữ'])
