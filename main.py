@@ -240,7 +240,7 @@ with table_of_contents[2]: # Phổ điểm và thông tin khác
         fig = px.histogram(
             mon_data,
             x=chon_mon,
-            nbins=60,
+            nbins=30,
             color_discrete_sequence=["#7BCAFF"],
             text_auto=True
         )
@@ -273,28 +273,26 @@ with table_of_contents[3]: # Thống kê theo tổ hợp môn
         st.success(f"Có tất cả {len(filtered_df)} học sinh chọn thi tổ hợp {chon} ({', '.join(subjects)}) - chiếm {round(len(filtered_df) / df.shape[0] * 100, 2)}% tổng thí sinh")
         
         # Tính tổng điểm tổ hợp
-        filtered_df["tong_diem"] = filtered_df[subjects].sum(axis=1)
+        filtered_df["Tổng điểm"] = filtered_df[subjects].sum(axis=1)
 
         # Vẽ biểu đồ phổ điểm
         st.markdown("### Biểu đồ phổ điểm tổ hợp")
-        st.bar_chart(
-            filtered_df["tong_diem"]
-            .round(1)  # làm tròn 1 chữ số thập phân để gom nhóm
-            .value_counts()
-            .sort_index()
-        )
+        fig = px.histogram(filtered_df, x="Tổng điểm", nbins=60,
+                           title=f"Phân bố tổng điểm tổ hợp {chon}", color_discrete_sequence=['#FF6F61'])
+        fig.update_layout(xaxis_title="Điểm", yaxis_title="Số lượng học sinh", bargap=0.05)
+        st.plotly_chart(fig, use_container_width=True)
 
         st.markdown(f"""
         <div style='background-color: transparent; padding: 30px; text-align: center; margin-bottom: 30px;'>
             <div style='font-size: 20px; color: white;'>Điểm trung bình của tổ hợp {chon}</div>
-            <div style='font-size: 60px; color: white;'>{filtered_df["tong_diem"].mean().round(2)}</div>
+            <div style='font-size: 60px; color: white;'>{filtered_df["Tổng điểm"].mean().round(2)}</div>
         </div>
         """, unsafe_allow_html=True)
 
         cards = {
-            "Điểm tổ hợp cao nhất": filtered_df["tong_diem"].max(),
-            "Điểm nhiều thí sinh đạt nhất": filtered_df["tong_diem"].mode().values[0],
-            "Trung vị": filtered_df["tong_diem"].median()
+            "Điểm tổ hợp cao nhất": filtered_df["Tổng điểm"].max(),
+            "Điểm nhiều thí sinh đạt nhất": filtered_df["Tổng điểm"].mode().values[0],
+            "Trung vị": filtered_df["Tổng điểm"].median()
         }
 
         def chunk_dict(d, n):
@@ -315,3 +313,7 @@ with table_of_contents[3]: # Thống kê theo tổ hợp môn
                     </div>
                     """, unsafe_allow_html=True)
 
+        st.subheader(f"Top 10 thí sinh có tổng điểm cao nhất theo tổ hợp {chon}, ({', '.join(subjects)})")
+        # Xóa bỏ NaN
+        filtered_df = filtered_df.dropna(subset=["Tổng điểm"])
+        st.dataframe(filtered_df.sort_values("Tổng điểm", ascending=False).head(10))
