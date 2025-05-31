@@ -8,6 +8,14 @@ from itertools import islice
 # Mấy cái xàm xí
 from module.data_handler import load_data
 from PIL import Image
+
+st.set_page_config(
+    page_title="03 CSA TEAM",
+    page_icon="logo.png",  
+)
+
+# st.title("TEAM NET PY")
+
 # Load & xử lý dữ liệu -----------------------------------------------------------------------
 df = load_data()
 df_noMNN = df.drop(columns=['Mã ngoại ngữ'])
@@ -20,6 +28,7 @@ st.sidebar.title('Giới thiệu')
 # logo team
 logo = Image.open("logo.png")
 st.sidebar.image(logo, caption="03 CSA Team", use_container_width=True)
+
 st.sidebar.write(
     'Ứng dụng này giúp bạn tra cứu điểm thi THPT Quốc Gia 2024.\n'
     'Ứng dụng được viết nhằm mục đích chuẩn bị cuối khóa CSA của MindX.\n\n'
