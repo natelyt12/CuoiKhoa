@@ -16,6 +16,10 @@ mon_thi = ['Toán', 'Vật Lí', 'Hóa học', 'Sinh học', 'Lịch sử', 'Đ�
 
 # Sidebar + title
 st.sidebar.title('Giới thiệu')
+
+# logo team
+logo = Image.open("logo.png")
+st.sidebar.image(logo, caption="03 CSA Team", use_container_width=True)
 st.sidebar.write(
     'Ứng dụng này giúp bạn tra cứu điểm thi THPT Quốc Gia 2024.\n'
     'Ứng dụng được viết nhằm mục đích chuẩn bị cuối khóa CSA của MindX.\n\n'
