@@ -7,7 +7,7 @@ from itertools import islice
 
 # Mấy cái xàm xí
 from module.data_handler import load_data
-
+from PIL import Image
 # Load & xử lý dữ liệu -----------------------------------------------------------------------
 df = load_data()
 df_noMNN = df.drop(columns=['Mã ngoại ngữ'])
@@ -79,8 +79,9 @@ with table_of_contents[0]: # Tổng quan
 with table_of_contents[1]: # Điểm trung binh
     average_scores = df_clean.mean().round(2)
     # Tìm SBD
-    with st.expander("Tìm số báo danh", expanded=False):
+    with st.expander("🔍 Tìm số báo danh", expanded=False):
         sbd_input = st.text_input("Nhập SBD cần tìm (ví dụ: 1000010):")
+
         if sbd_input:
             result = df[df["SBD"].astype(str) == sbd_input.strip()]
             if not result.empty:
