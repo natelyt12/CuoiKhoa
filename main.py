@@ -3,6 +3,11 @@ from module.data_handler import load_data
 from module.statistics import get_summary_stats, calculate_average_scores
 from module.ui_components import show_sidebar_info, show_css_style, show_cards
 import plotly.express as px
+from PIL import Image
+
+# logo team
+logo = Image.open("logo.png")
+st.sidebar.image(logo, caption="03 CSA Team", use_container_width=True)
 
 # Load & xử lý dữ liệu
 df = load_data()
