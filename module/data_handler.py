@@ -2,7 +2,6 @@ import pandas as pd
 
 def load_data():
     df = pd.read_csv('./diem_thi_thpt_2024.csv')
-    df.fillna(0, inplace=True)
     df.rename(columns={
         'sbd': 'SBD',
         'toan': 'Toán',
