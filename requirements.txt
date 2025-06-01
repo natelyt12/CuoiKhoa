@@ -1,6 +1,6 @@
-pandas
+streamlit
 plotly
+pandas
+numpy
 seaborn
 matplotlib
-numpy
-islice
