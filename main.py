@@ -8,7 +8,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Mấy cái xàm xí
-from module.data_handler import load_data
 from PIL import Image
 
 st.set_page_config(
@@ -16,6 +15,22 @@ st.set_page_config(
     page_icon="logo.png",  
 )
 
+def load_data():
+    df = pd.read_csv('./diem_thi_thpt_2024.csv')
+    df.rename(columns={
+        'sbd': 'SBD',
+        'toan': 'Toán',
+        'ngu_van': 'Ngữ văn',
+        'ngoai_ngu': 'Ngoại ngữ',
+        'vat_li': 'Vật Lí',
+        'hoa_hoc': 'Hóa học',
+        'sinh_hoc': 'Sinh học',
+        'lich_su': 'Lịch sử',
+        'dia_li': 'Địa lí',
+        'gdcd': 'GDCD',
+        'ma_ngoai_ngu': 'Mã ngoại ngữ'
+    }, inplace=True)
+    return df
 
 
 # Load & xử lý dữ liệu -----------------------------------------------------------------------
@@ -95,7 +110,7 @@ with table_of_contents[1]: # Điểm trung binh
     average_scores = df_clean.mean().round(2)
     # Tìm SBD
     with st.expander("🔍 Tìm số báo danh", expanded=False):
-        sbd_input = st.text_input("Nhập SBD cần tìm (ví dụ: 1010):")
+        sbd_input = st.text_input("Nhập SBD cần tìm (ví dụ: 1000010):")
 
         if sbd_input:
             result = df[df["SBD"].astype(str) == sbd_input.strip()]
