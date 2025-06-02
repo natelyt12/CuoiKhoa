@@ -1,3 +1,4 @@
+### Sản phẩm cuối khoá CSA tại MindX của team
 <img src="./logo.png">
 
 1) Câu chuyện dữ liệu: Trung Kiên - Như Đăng - Thanh
